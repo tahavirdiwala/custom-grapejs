@@ -5,7 +5,12 @@ import { useRef, useCallback } from "react";
 
 const gjsOptions: EditorConfig = {
   height: "100vh",
-  storageManager: false,
+  storageManager: {
+    type: "local",
+    autosave: true,
+    autoload: true,
+    stepsBeforeSave: 1,
+  },
   undoManager: { trackSelection: false },
   selectorManager: { componentFirst: true },
   projectData: {
