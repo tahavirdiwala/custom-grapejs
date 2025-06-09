@@ -40,7 +40,7 @@ export default function GrapeEditorPage() {
         pages: [
           {
             name: "Home page",
-            component: `<h1>GrapesJS React Custom UI</h1>`,
+            component: `<h1>GrapesJS Next Custom UI</h1>`,
           },
         ],
       },
