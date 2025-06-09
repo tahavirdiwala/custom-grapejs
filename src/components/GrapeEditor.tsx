@@ -61,7 +61,7 @@ export default function GrapeEditorPage() {
           onClick={() => saveProjectRef.current()}
           className="px-4 py-2 bg-white cursor-pointer"
         >
-          Save Project
+          Save Page
         </button>
       </div>
       <GjsEditor
