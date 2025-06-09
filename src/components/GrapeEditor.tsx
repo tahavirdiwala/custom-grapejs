@@ -7,12 +7,12 @@ const gjsOptions: EditorConfig = {
   height: "100vh",
   storageManager: {
     type: "local",
-    autoload: true, // This will automatically load on editor init
+    autoload: true, // Load existing data on startup
+    autosave: false, // Disable automatic saving
     stepsBeforeSave: 1,
-    // Optional: Custom storage key
     options: {
       local: {
-        key: "grapesjs-project", // Custom key for localStorage
+        key: "grapesjs-project",
       },
     },
   },
@@ -39,7 +39,7 @@ export default function GrapeEditorPage() {
   const saveProjectRef = useRef<() => void>(() => {});
 
   const onEditor = useCallback((editor: Editor) => {
-    // Manual save function
+    // Manual save function - only saves when called
     const saveData = () => {
       editor.store();
       console.log("Data saved to localStorage");
@@ -47,7 +47,7 @@ export default function GrapeEditorPage() {
 
     saveProjectRef.current = saveData;
 
-    // Alternative: Force load after a short delay to ensure editor is fully ready
+    // Load existing data after a short delay to ensure editor is fully ready
     setTimeout(() => {
       editor.load();
       console.log("Data loaded from localStorage after mount");
