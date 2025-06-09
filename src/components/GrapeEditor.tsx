@@ -2,8 +2,8 @@
 import GjsEditor from "@grapesjs/react";
 import type { Editor, EditorConfig } from "grapesjs";
 import { useRef, useCallback, useMemo, useState } from "react";
+import CustomButtonPlugin from "@/components/blocks/button.block";
 
-// Memoized configuration to prevent unnecessary re-renders
 const STORAGE_KEY = "grapesjs-project";
 
 const PLACEHOLDER_ASSETS = [
@@ -24,7 +24,7 @@ export default function GrapeEditorPage() {
       height: "100vh",
       storageManager: {
         type: "local",
-        autoload: true, // Keep this enabled
+        autoload: true,
         autosave: false,
         stepsBeforeSave: 1,
         options: {
@@ -79,12 +79,14 @@ export default function GrapeEditorPage() {
     (editor: Editor) => {
       editorRef.current = editor;
 
+      // Add custom button components
+      CustomButtonPlugin(editor);
+
       // Load existing data with proper timing
       const loadData = () => {
         try {
           const hasStoredData = localStorage.getItem(STORAGE_KEY);
           if (hasStoredData) {
-            // Force load the data
             editor.load();
             console.log("Data loaded from localStorage on refresh");
           } else {
@@ -98,7 +100,6 @@ export default function GrapeEditorPage() {
       // Wait for editor to be fully ready before loading
       editor.on("load", () => {
         console.log("Editor load event triggered");
-        // Additional load after editor is ready
         setTimeout(() => {
           loadData();
         }, 100);
@@ -109,21 +110,20 @@ export default function GrapeEditorPage() {
         loadData();
       }, 100);
 
-      // Optional: Add keyboard shortcut for save (Ctrl+S)
+      // Keyboard shortcut for save (Ctrl+S)
       const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "s") {
           e.preventDefault();
+          e.stopPropagation();
           handleSave();
         }
       };
 
-      const controller = new AbortController();
-
-      document.addEventListener("keydown", handleKeyDown, controller);
+      document.addEventListener("keydown", handleKeyDown);
 
       // Cleanup function
       return () => {
-        controller.abort();
+        document.removeEventListener("keydown", handleKeyDown);
       };
     },
     [handleSave]
@@ -132,8 +132,6 @@ export default function GrapeEditorPage() {
   return (
     <>
       <div className="flex justify-end items-center bg-primary p-2">
-        {/* Save status indicator */}
-
         <button
           onClick={handleSave}
           disabled={isSaving}
