@@ -12,6 +12,10 @@ const CustomButtonPlugin = (editor: Editor) => {
           type: "button",
         },
         content: "Click Me!",
+        "button-text": "Click Me!",
+        "icon-type": "none",
+        "icon-position": "left",
+        "icon-size": 16,
         style: {
           "background-color": "#007bff",
           color: "#ffffff",
@@ -30,7 +34,7 @@ const CustomButtonPlugin = (editor: Editor) => {
         traits: [
           {
             type: "text",
-            name: "content",
+            name: "button-text",
             label: "Button Text",
             changeProp: true,
           },
@@ -167,41 +171,70 @@ const CustomButtonPlugin = (editor: Editor) => {
         if (!svgCode || !svgCode.trim()) return "";
 
         try {
+          // Clean up the SVG code
+          const cleanSVG = svgCode.trim();
+
+          // If it doesn't start with <svg, it might be malformed
+          if (!cleanSVG.toLowerCase().startsWith("<svg")) {
+            console.warn("SVG code must start with <svg tag");
+            return "";
+          }
+
           // Create a temporary div to parse the SVG
           const tempDiv = document.createElement("div");
-          tempDiv.innerHTML = svgCode.trim();
+          tempDiv.innerHTML = cleanSVG;
           const svgElement = tempDiv.querySelector("svg");
 
-          if (!svgElement) return "";
+          if (!svgElement) {
+            console.warn("No valid SVG element found");
+            return "";
+          }
 
           // Apply size if provided
-          if (size) {
+          if (size && size > 0) {
             svgElement.setAttribute("width", size.toString());
             svgElement.setAttribute("height", size.toString());
           }
 
-          // Apply color if provided and SVG uses currentColor
+          // Apply color if provided
           if (color) {
+            // Set color as CSS custom property
             svgElement.style.color = color;
-            // Also apply to fill if no fill is specified
+
+            // Handle fill attribute
+            const currentFill = svgElement.getAttribute("fill");
             if (
-              !svgElement.getAttribute("fill") ||
-              svgElement.getAttribute("fill") === "currentColor"
+              !currentFill ||
+              currentFill === "currentColor" ||
+              currentFill === "none"
             ) {
               svgElement.setAttribute("fill", color);
             }
-            // Apply to stroke if no stroke is specified
-            if (
-              !svgElement.getAttribute("stroke") ||
-              svgElement.getAttribute("stroke") === "currentColor"
-            ) {
+
+            // Handle stroke attribute
+            const currentStroke = svgElement.getAttribute("stroke");
+            if (currentStroke === "currentColor") {
               svgElement.setAttribute("stroke", color);
             }
+
+            // Also apply to child elements that use currentColor
+            const paths = svgElement.querySelectorAll(
+              "path, circle, rect, polygon, line"
+            );
+            paths.forEach((path) => {
+              if (path.getAttribute("fill") === "currentColor") {
+                path.setAttribute("fill", color);
+              }
+              if (path.getAttribute("stroke") === "currentColor") {
+                path.setAttribute("stroke", color);
+              }
+            });
           }
 
           // Ensure proper styling for inline display
           svgElement.style.display = "inline-block";
           svgElement.style.verticalAlign = "middle";
+          svgElement.style.flexShrink = "0";
 
           return svgElement.outerHTML;
         } catch (error) {
@@ -213,7 +246,6 @@ const CustomButtonPlugin = (editor: Editor) => {
       // Handle trait changes
       init() {
         // Listen for trait changes
-        this.on("change:attributes", this.handleAttributeChange);
         this.on("change:button-style", this.handleStyleChange);
         this.on("change:button-size", this.handleSizeChange);
         this.on(
@@ -221,25 +253,24 @@ const CustomButtonPlugin = (editor: Editor) => {
           this.handleCustomColors
         );
         this.on("change:border-radius", this.handleBorderRadius);
-        this.on("change:disabled", this.handleDisabled); // Added disabled handler
-        this.on("change:type change:onclick", this.handleButtonAttributes); // Added for type and onclick
+        this.on("change:disabled", this.handleDisabled);
+        this.on("change:type change:onclick", this.handleButtonAttributes);
         this.on(
-          "change:content change:icon-type change:svg-code change:icon-position change:icon-size change:icon-color",
+          "change:button-text change:icon-type change:svg-code change:icon-position change:icon-size change:icon-color",
           this.updateContent
         );
+
+        // Initial content update - use timeout to ensure traits are loaded
+        setTimeout(() => {
+          this.updateContent();
+        }, 0);
       },
 
-      handleAttributeChange() {
-        const attrs = this.getAttributes();
-        this.addAttributes(attrs);
-      },
-
-      // NEW: Handle disabled state
+      // Handle disabled state
       handleDisabled() {
         const isDisabled = this.get("disabled");
         if (isDisabled) {
           this.addAttributes({ disabled: "disabled" });
-          // Add visual disabled styling
           this.addStyle({
             opacity: "0.6",
             cursor: "not-allowed",
@@ -247,7 +278,6 @@ const CustomButtonPlugin = (editor: Editor) => {
           });
         } else {
           this.removeAttributes("disabled");
-          // Remove disabled styling
           this.addStyle({
             opacity: "1",
             cursor: "pointer",
@@ -256,7 +286,7 @@ const CustomButtonPlugin = (editor: Editor) => {
         }
       },
 
-      // NEW: Handle button type and onclick attributes
+      // Handle button type and onclick attributes
       handleButtonAttributes() {
         const type = this.get("type");
         const onclick = this.get("onclick");
@@ -280,7 +310,6 @@ const CustomButtonPlugin = (editor: Editor) => {
         const style = this.get("button-style");
 
         if (style === "custom") {
-          // Custom style will be handled by handleCustomColors
           return;
         }
 
@@ -350,57 +379,85 @@ const CustomButtonPlugin = (editor: Editor) => {
       },
 
       updateContent() {
-        const content = this.get("content") || "Click Me!";
-        const iconType = this.get("icon-type") || "none";
-        const iconPosition = this.get("icon-position") || "left";
+        // Prevent recursive calls
+        if (this._isUpdatingContent) return;
+        this._isUpdatingContent = true;
 
-        let finalContent = content;
+        try {
+          const buttonText = this.get("button-text") || "Click Me!";
+          const iconType = this.get("icon-type") || "none";
+          const iconPosition = this.get("icon-position") || "left";
 
-        if (iconType === "svg") {
-          const svgCode = this.get("svg-code");
-          const iconSize = this.get("icon-size") || 16;
-          const iconColor = this.get("icon-color");
+          console.log("Updating content:", {
+            buttonText,
+            iconType,
+            iconPosition,
+          });
 
-          if (svgCode) {
-            const processedSVG = this.processSVG(svgCode, iconSize, iconColor);
+          if (iconType === "svg") {
+            const svgCode = this.get("svg-code");
+            const iconSize = this.get("icon-size") || 16;
+            const iconColor = this.get("icon-color");
 
-            if (processedSVG) {
-              if (iconPosition === "left") {
-                finalContent = `<span class="btn-icon" style="margin-right: 6px; display: inline-flex; align-items: center;">${processedSVG}</span><span class="btn-text">${content}</span>`;
-              } else if (iconPosition === "right") {
-                finalContent = `<span class="btn-text">${content}</span><span class="btn-icon" style="margin-left: 6px; display: inline-flex; align-items: center;">${processedSVG}</span>`;
+            console.log("SVG details:", { svgCode, iconSize, iconColor });
+
+            if (svgCode && svgCode.trim()) {
+              const processedSVG = this.processSVG(
+                svgCode,
+                iconSize,
+                iconColor
+              );
+
+              console.log("Processed SVG:", processedSVG);
+
+              if (processedSVG) {
+                let finalContent = "";
+
+                if (iconPosition === "left") {
+                  finalContent = `<span class="btn-icon" style="margin-right: 8px; display: inline-flex; align-items: center; line-height: 0;">${processedSVG}</span><span class="btn-text">${buttonText}</span>`;
+                } else {
+                  finalContent = `<span class="btn-text">${buttonText}</span><span class="btn-icon" style="margin-left: 8px; display: inline-flex; align-items: center; line-height: 0;">${processedSVG}</span>`;
+                }
+
+                // Ensure flexbox styling when icon is present
+                this.addStyle({
+                  display: "inline-flex",
+                  "align-items": "center",
+                  "justify-content": "center",
+                  gap: "0px", // Remove gap since we're using margins
+                });
+
+                console.log("Final content with icon:", finalContent);
+                this.components(finalContent);
+                return;
               }
-
-              // Ensure flexbox styling when icon is present
-              this.addStyle({
-                display: "inline-flex",
-                "align-items": "center",
-                "justify-content": "center",
-              });
             }
           }
-        } else {
-          // Reset to regular button styling when no icon
+
+          // No icon or invalid SVG - just show text
           this.addStyle({
             display: "inline-block",
           });
-        }
 
-        this.components(finalContent);
+          console.log("Final content without icon:", buttonText);
+          this.components(buttonText);
+        } finally {
+          this._isUpdatingContent = false;
+        }
       },
     },
 
-    // Define the view (optional - for custom behavior)
+    // Define the view
     view: {
       event: {
         dblclick: "editContent",
       },
 
       editContent() {
-        const content = prompt("Enter button text:", this.model.get("content"));
-        if (content !== null) {
-          this.model.set("content", content);
-          this.model.trigger("change:content");
+        const currentText = this.model.get("button-text") || "Click Me!";
+        const newText = prompt("Enter button text:", currentText);
+        if (newText !== null && newText !== currentText) {
+          this.model.set("button-text", newText);
         }
       },
     },
