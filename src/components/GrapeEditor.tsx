@@ -48,6 +48,17 @@ export default function GrapeEditorPage() {
     []
   );
 
+  // Memoized plugins array
+  const plugins = useMemo(
+    () => [
+      {
+        id: "gjs-blocks-basic",
+        src: "https://unpkg.com/grapesjs-blocks-basic",
+      },
+    ],
+    []
+  );
+
   // Optimized save function with loading state and error handling
   const handleSave = useCallback(async () => {
     if (!editorRef.current || isSaving) return;
@@ -96,7 +107,7 @@ export default function GrapeEditorPage() {
       // Also load after a slight delay to ensure editor is fully initialized
       setTimeout(() => {
         loadData();
-      }, 500);
+      }, 100);
 
       // Optional: Add keyboard shortcut for save (Ctrl+S)
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -106,30 +117,21 @@ export default function GrapeEditorPage() {
         }
       };
 
-      document.addEventListener("keydown", handleKeyDown);
+      const controller = new AbortController();
+
+      document.addEventListener("keydown", handleKeyDown, controller);
 
       // Cleanup function
       return () => {
-        document.removeEventListener("keydown", handleKeyDown);
+        controller.abort();
       };
     },
     [handleSave]
   );
 
-  // Memoized plugins array
-  const plugins = useMemo(
-    () => [
-      {
-        id: "gjs-blocks-basic",
-        src: "https://unpkg.com/grapesjs-blocks-basic",
-      },
-    ],
-    []
-  );
-
   return (
     <>
-      <div className="flex justify-between items-center bg-primary p-2">
+      <div className="flex justify-end items-center bg-primary p-2">
         {/* Save status indicator */}
 
         <button
