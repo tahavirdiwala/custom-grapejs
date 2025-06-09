@@ -453,11 +453,27 @@ const CustomButtonPlugin = (editor: Editor) => {
         dblclick: "editContent",
       },
 
-      editContent() {
+      editContent(e: Event) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const currentText = this.model.get("button-text") || "Click Me!";
         const newText = prompt("Enter button text:", currentText);
+
         if (newText !== null && newText !== currentText) {
           this.model.set("button-text", newText);
+          // Force content update
+          this.model.trigger("change:button-text");
+        }
+      },
+
+      // Optional: Add visual feedback during editing
+      onRender() {
+        // Add a data attribute to indicate this is editable
+        if (this.el) {
+          this.el.setAttribute("data-editable", "true");
+          this.el.style.cursor = "pointer";
+          this.el.title = "Double-click to edit text";
         }
       },
     },

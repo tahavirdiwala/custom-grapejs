@@ -80,7 +80,7 @@ export default function GrapeEditorPage() {
       editorRef.current = editor;
 
       // Add custom components plugins
-      CustomButtonPlugin(editor);
+      [CustomButtonPlugin].forEach((plugin) => plugin(editor));
 
       // Load existing data with proper timing
       const loadData = () => {
