@@ -40,7 +40,6 @@ export default function GrapeEditorPage() {
         pages: [
           {
             name: "Home page",
-            component: `<h1>GrapesJS Next Custom UI</h1>`,
           },
         ],
       },
@@ -49,15 +48,12 @@ export default function GrapeEditorPage() {
   );
 
   // Memoized plugins array
-  const plugins = useMemo(
-    () => [
-      {
-        id: "gjs-blocks-basic",
-        src: "https://unpkg.com/grapesjs-blocks-basic",
-      },
-    ],
-    []
-  );
+  const plugins = [
+    {
+      id: "gjs-blocks-basic",
+      src: "https://unpkg.com/grapesjs-blocks-basic",
+    },
+  ];
 
   // Optimized save function with loading state and error handling
   const handleSave = useCallback(async () => {
