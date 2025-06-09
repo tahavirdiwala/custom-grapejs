@@ -7,9 +7,14 @@ const gjsOptions: EditorConfig = {
   height: "100vh",
   storageManager: {
     type: "local",
-    autosave: true,
-    autoload: true,
+    autoload: true, // This will automatically load on editor init
     stepsBeforeSave: 1,
+    // Optional: Custom storage key
+    options: {
+      local: {
+        key: "grapesjs-project", // Custom key for localStorage
+      },
+    },
   },
   undoManager: { trackSelection: false },
   selectorManager: { componentFirst: true },
@@ -31,26 +36,47 @@ const gjsOptions: EditorConfig = {
 };
 
 export default function GrapeEditorPage() {
-  const editorRef = useRef<Editor | null>(null);
+  const saveProjectRef = useRef<() => void>(() => {});
 
   const onEditor = useCallback((editor: Editor) => {
-    console.log("Editor loaded");
-    editorRef.current = editor;
+    // Manual save function
+    const saveData = () => {
+      editor.store();
+      console.log("Data saved to localStorage");
+    };
+
+    saveProjectRef.current = saveData;
+
+    // Alternative: Force load after a short delay to ensure editor is fully ready
+    setTimeout(() => {
+      editor.load();
+      console.log("Data loaded from localStorage after mount");
+    }, 100);
   }, []);
 
   return (
-    <GjsEditor
-      className="gjs-custom-editor text-white bg-slate-900"
-      grapesjs="https://unpkg.com/grapesjs"
-      grapesjsCss="https://unpkg.com/grapesjs/dist/css/grapes.min.css"
-      options={gjsOptions}
-      plugins={[
-        {
-          id: "gjs-blocks-basic",
-          src: "https://unpkg.com/grapesjs-blocks-basic",
-        },
-      ]}
-      onEditor={onEditor}
-    />
+    <>
+      <div className="flex justify-end bg-primary p-2">
+        <button
+          onClick={() => saveProjectRef.current()}
+          className="px-4 py-2 bg-white cursor-pointer"
+        >
+          Save Project
+        </button>
+      </div>
+      <GjsEditor
+        className="gjs-custom-editor text-white bg-slate-900"
+        grapesjs="https://unpkg.com/grapesjs"
+        grapesjsCss="https://unpkg.com/grapesjs/dist/css/grapes.min.css"
+        options={gjsOptions}
+        plugins={[
+          {
+            id: "gjs-blocks-basic",
+            src: "https://unpkg.com/grapesjs-blocks-basic",
+          },
+        ]}
+        onEditor={onEditor}
+      />
+    </>
   );
 }
