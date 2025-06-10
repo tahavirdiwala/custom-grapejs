@@ -47,7 +47,6 @@ export default function GrapeEditorPage() {
     []
   );
 
-  // Memoized plugins array
   const plugins = [
     {
       id: "gjs-blocks-basic",
@@ -70,7 +69,6 @@ export default function GrapeEditorPage() {
     }
   }, [isSaving]);
 
-  // Optimized editor initialization
   const onEditor = useCallback(
     (editor: Editor) => {
       editorRef.current = editor;
@@ -78,35 +76,21 @@ export default function GrapeEditorPage() {
       // Add custom components plugins
       [CustomButtonPlugin].forEach((plugin) => plugin(editor));
 
-      // Load existing data with proper timing
+      // Memoized load data function
       const loadData = () => {
         try {
           const hasStoredData = localStorage.getItem(STORAGE_KEY);
           if (hasStoredData) {
             editor.load();
-            console.log("Data loaded from localStorage on refresh");
-          } else {
-            console.log("No stored data found");
+            console.log("Data loaded from localStorage");
           }
         } catch (error) {
           console.error("Failed to load data:", error);
+          // You might want to show a user-friendly error message here
         }
       };
 
-      // Wait for editor to be fully ready before loading
-      editor.on("load", () => {
-        console.log("Editor load event triggered");
-        setTimeout(() => {
-          loadData();
-        }, 100);
-      });
-
-      // Also load after a slight delay to ensure editor is fully initialized
-      setTimeout(() => {
-        loadData();
-      }, 100);
-
-      // Keyboard shortcut for save (Ctrl+S)
+      // Memoized keyboard handler
       const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "s") {
           e.preventDefault();
@@ -115,11 +99,29 @@ export default function GrapeEditorPage() {
         }
       };
 
-      document.addEventListener("keydown", handleKeyDown);
+      // Single load initialization with proper timing
+      const initializeEditor = () => {
+        const loadTimeout = setTimeout(loadData, 100);
 
-      // Cleanup function
+        // Setup editor load event
+        editor.on("load", loadData);
+
+        // Return cleanup for this specific initialization
+        return () => {
+          clearTimeout(loadTimeout);
+          editor.off("load", loadData);
+        };
+      };
+
+      // Initialize event listeners
+      document.addEventListener("keydown", handleKeyDown);
+      const cleanupInit = initializeEditor();
+
+      // Enhanced cleanup function
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
+        cleanupInit();
+        editorRef.current = null;
       };
     },
     [handleSave]
