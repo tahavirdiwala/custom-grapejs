@@ -67,7 +67,6 @@ export default function GrapeEditorPage() {
       // Add custom components plugins
       [CustomButtonPlugin].forEach((plugin) => plugin(editor));
 
-      // Memoized load data function
       const loadData = () => {
         try {
           const hasStoredData = localStorage.getItem(STORAGE_KEY);
