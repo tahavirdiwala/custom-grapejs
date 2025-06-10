@@ -3,16 +3,7 @@ import GjsEditor from "@grapesjs/react";
 import type { Editor, EditorConfig } from "grapesjs";
 import { useRef, useCallback, useMemo, useState } from "react";
 import CustomButtonPlugin from "@/components/blocks/button.block";
-
-const STORAGE_KEY = "grapesjs-project";
-
-const PLACEHOLDER_ASSETS = [
-  "https://via.placeholder.com/350x250/78c5d6/fff",
-  "https://via.placeholder.com/350x250/459ba8/fff",
-  "https://via.placeholder.com/350x250/79c267/fff",
-  "https://via.placeholder.com/350x250/c5d647/fff",
-  "https://via.placeholder.com/350x250/f28c33/fff",
-] as const;
+import { PLACEHOLDER_ASSETS, STORAGE_KEY } from "@/lib/constant";
 
 export default function GrapeEditorPage() {
   const [isSaving, setIsSaving] = useState(false);
