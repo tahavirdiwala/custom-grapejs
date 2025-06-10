@@ -81,7 +81,6 @@ export default function GrapeEditorPage() {
         }
       };
 
-      // Memoized keyboard handler
       const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "s") {
           e.preventDefault();
